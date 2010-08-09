@@ -238,6 +238,85 @@ abstract class ActiveEntity extends Object implements ArrayAccess
 	}
 
 
+
+	/********************* magic getters & setters *********************/
+
+
+
+	/**
+	 * Returns property value. Do not call directly.
+	 * Tries to use dynamic getter for protected properties (reflection fields) if getter is not defined.
+	 * 
+	 * @param  string  property name
+	 * @return mixed   property value
+	 * @throws MemberAccessException if the property is not defined.
+	 */
+	public function &__get($name) {
+		try {
+			$value = parent::__get($name);
+			return $value;
+		
+		} catch (MemberAccessException $e) {
+			if ($this->hasProtectedReflectionField($name)) { // intentionally not used __isset
+				$value = $this->$name;
+				return $value;
+			} else {
+				$class = get_called_class();
+				throw new MemberAccessException($e->getMessage()
+					. " If you want to use dynamic getter for this property, make sure that property has visibility 'protected'.");
+			}
+		}
+	}
+
+
+	/**
+	 * Sets value of a property. Do not call directly.
+	 * Tries to use dynamic setter for protected properties (reflection fields) if setter is not defined.
+	 *
+	 * @param  string  property name
+	 * @param  mixed   property value
+	 * @return void
+	 * @throws MemberAccessException if the property is not defined or is read-only
+	 */
+	public function __set($name, $value) {
+		try {
+			parent::__set($name, $value);
+
+		} catch(MemberAccessException $e) {
+			if ($this->hasProtectedReflectionField($name)) { // intentionally not used __isset
+				$this->$name = $value;
+			} else {
+				throw new MemberAccessException($e->getMessage()
+					. " If you want to use dynamic setter for this property, make sure that property has visibility 'protected'.");
+			}
+		}
+	}
+
+
+	/**
+	 * Is property defined?
+	 * Tries to use dynamic getter for protected properties (reflection fields).
+	 * 
+	 * @param  string  property name
+	 * @return bool
+	 */
+	public function __isset($name) {
+		if (parent::__isset($name)) {
+			return TRUE;
+		} else {
+			return $this->hasProtectedReflectionField($name);
+		}
+	}
+
+
+	protected function hasProtectedReflectionField($name) {
+		$rc = $this->getReflection();
+		return $rc->hasProperty($name) && $rc->getProperty($name)->isProtected()
+				&& array_key_exists($name, self::getClassMetadata()->reflFields);
+	}
+
+
+
 	/********************* interface ArrayAccess *********************/
 
 
@@ -289,5 +368,4 @@ abstract class ActiveEntity extends Object implements ArrayAccess
 		$this->__unset($name);
 	}
 
-	/**/
 }
