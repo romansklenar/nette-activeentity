@@ -20,7 +20,6 @@
 namespace DoctrineExtensions\ActiveEntity;
 
 use ArrayAccess, Nette\Environment, Nette\Object, Doctrine, Doctrine\Common\Collections\Collection, MemberAccessException; // use with Nette 1.0 for PHP 5.3
-// use ArrayAccess, Environment, Object, Doctrine, Doctrine\Common\Collections\Collection, MemberAccessException; // use with Nette 1.0 for PHP 5.2
 
 
 /**
@@ -35,6 +34,9 @@ use ArrayAccess, Nette\Environment, Nette\Object, Doctrine, Doctrine\Common\Coll
  * @author  Guilherme Blanco <guilhermeblanco@hotmail.com>
  * @author  Jonathan Wage <jonwage@gmail.com>
  * @author  Roman Borschel <roman@code-factory.org>
+ *
+ * @MappedSuperclass
+ * @HasLifecycleCallbacks
  */
 abstract class ActiveEntity extends Object implements ArrayAccess
 {
@@ -43,7 +45,7 @@ abstract class ActiveEntity extends Object implements ArrayAccess
 
 
 	/**
-	 * Initializes a new entity. Bypass protected properties encapsulation!
+	 * Initializes a new entity. Bypass properties encapsulation!
 	 *
 	 * @param array $values
 	 */
@@ -169,7 +171,7 @@ abstract class ActiveEntity extends Object implements ArrayAccess
 			if (is_array($value)) {
 				self::fromArray($value, $instance->$key);
 			} else {
-				$instance->$key = $value;
+				$instance[$key] = $value;
 			}
 		}
 		return $instance;
@@ -190,18 +192,21 @@ abstract class ActiveEntity extends Object implements ArrayAccess
 		$array = array();
 		if ($instance instanceof ActiveEntity) {
 			foreach (self::getClassMetadata()->reflFields as $key => $reflField) {
-				$value = $instance->$key;
+				if (isset($instance[$key])) {
+					$value = $instance[$key];
 
-				if ($value instanceof ActiveEntity) {
-					if ($result = $value->toArray()) {
-						$array[$key] = $result;
+					if ($value instanceof ActiveEntity) {
+						if ($result = $value->toArray()) {
+							$array[$key] = $result;
+						}
+
+					} else if ($value instanceof Collection) {
+						// @todo: implement and debug
+						// $array[$key] = $this->toArray($value);
+
+					} else {
+						$array[$key] = $value;
 					}
-
-				} else if ($value instanceof Collection) {
-					$array[$key] = $this->toArray($value);
-
-				} else {
-					$array[$key] = $value;
 				}
 			}
 
