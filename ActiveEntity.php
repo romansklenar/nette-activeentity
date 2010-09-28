@@ -35,6 +35,17 @@ use ArrayAccess, Nette\Environment, Nette\Object, Doctrine, Doctrine\Common\Coll
  * @author  Jonathan Wage <jonwage@gmail.com>
  * @author  Roman Borschel <roman@code-factory.org>
  *
+ * @method ActiveEntity createQueryBuilder() createQueryBuilder(string $alias)
+ * @method ActiveEntity clear() clear()
+ * @method ActiveEntity count() count(array $criteria)
+ * @method ActiveEntity exists() exists(array $criteria)
+ * @method ActiveEntity find() find(mixed $id)
+ * @method ActiveEntity findOneBy() findOneBy(array $criteria)
+ * @method array<ActiveEntity> findBy() findBy(array $criteria)
+ * @method array<ActiveEntity> findAll() findAll()
+ * @method array<ActiveEntity> findByAttribute() findByAttribute(mixed $value)
+ * @method ActiveEntity findOneByAttribute() findOneByAttribute(mixed $value)
+ *
  * @MappedSuperclass
  * @HasLifecycleCallbacks
  */
