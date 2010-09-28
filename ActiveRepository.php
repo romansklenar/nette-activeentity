@@ -36,20 +36,65 @@ use Doctrine, InvalidStateException;
 class ActiveRepository extends Doctrine\ORM\EntityRepository
 {
 	/**
+	 * Returns count of entries in the repository that matches conditions given.
+	 *
+	 * @param int|string|array $criteria
+	 * @return int
+	 */
+	public function count($criteria = array()) {
+		if (!is_array($criteria) && (is_int($criteria) || is_string($criteria))) {
+			$criteria = array('id' => $criteria);
+		}
+
+		$qb = $this->getEntityManager()->createQueryBuilder();
+		$qb->select($qb->expr()->count('uni.id'))
+			->from($this->getEntityName(), 'uni');
+
+		if (!empty($criteria)) {
+			if (count($criteria) == 1) {
+				foreach ($criteria as $key => $value) {
+					$qb->where("uni.$key = :$key");
+				}
+				$qb->setParameters($criteria);
+
+			} else {
+				foreach ($criteria as $key => $value) {
+					$qb->andWhere("uni.$key = :$key");
+				}
+				$qb->setParameters($criteria);
+			}
+		}
+
+		return (int) $qb->getQuery()->getSingleScalarResult();
+	}
+
+
+	/**
+	 * Checks whether an entry exists in the repository that matches conditions given.
+	 *
+	 * @param int|string|array $criteria
+	 * @return bool
+	 */
+	public function exists($criteria) {
+		return $this->count($criteria) > 0;
+	}
+
+
+	/**
 	 * Fetches all records from table like $key => $value pairs.
-	 * 
+	 *
 	 * @param  string  associative key
 	 * @param  string  value
 	 * @return array
 	 * @throws InvalidArgumentException
 	 */
-	final public function fetchPairs($key = NULL, $value = NULL) {
+	public function fetchPairs($key = NULL, $value = NULL) {
 		$alias = 'a';
 		$attrs = array($key, $value);
 		$attrs = array_map(function ($el) use ($alias) {
 			return "$alias.$el";
 		}, $attrs);
-		
+
 		$qb = $this->createQueryBuilder($alias);
 		$qb->add('select', implode(', ', $attrs));
 		$result = $qb->getQuery()->getResult();
@@ -69,10 +114,10 @@ class ActiveRepository extends Doctrine\ORM\EntityRepository
 	 * @return array
 	 * @throws InvalidArgumentException
 	 */
-	final public function fetchAssoc($key) {
+	public function fetchAssoc($key) {
 		$result = $this->findAll();
 		$arr = array();
-		
+
 		foreach ($result as $row) {
 			if (array_key_exists($row->$key, $arr)) {
 				throw new InvalidStateException("Key value {$row->$key} is duplicit in fetched associative array. Try to use different associative key");
