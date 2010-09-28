@@ -93,7 +93,7 @@ abstract class ActiveEntity extends Object implements ArrayAccess
 	 * Detach entity from persistent an EntityManager and thus no longer be managed.
 	 */
 	public function detach() {
-		self::getEntityManager()->remove($this);
+		self::getEntityManager()->detach($this);
 	}
 
 
