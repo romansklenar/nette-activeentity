@@ -26,7 +26,11 @@ use ArrayAccess,
 	Nette\Object,
 	Doctrine,
 	Doctrine\ORM\EntityManager,
-	Doctrine\Common\Collections\Collection;
+	Doctrine\Common\Collections\Collection,
+	Symfony,
+	Symfony\Component\Validator\ConstraintViolation,
+	Symfony\Component\Validator\ConstraintViolationList,
+	Symfony\Component\Validator\Validator;
 
 
 /**
@@ -60,6 +64,9 @@ abstract class ActiveEntity extends Object implements ArrayAccess
 {
 	/** @var Doctrine\ORM\EntityManager */
 	protected static $em;
+
+	/** @var Symfony\Component\Validator\Validator */
+	protected static $validator;
 
 
 	/**
@@ -109,6 +116,79 @@ abstract class ActiveEntity extends Object implements ArrayAccess
 	 */
 	public function destroy() {
 		self::getEntityManager()->remove($this);
+	}
+
+
+
+	/********************* validation *********************/
+
+
+
+	/**
+	 * Gets entity validator.
+	 *
+	 * @return Symfony\Component\Validator\Validator
+	 */
+	protected static function getValidator() {
+		if (static::$validator == NULL) {
+			throw new InvalidStateException("Validator is not set.");
+		}
+		return static::$validator;
+	}
+
+
+	/**
+	 * Sets entity validator.
+	 *
+	 * @param Symfony\Component\Validator\Validator $validator
+	 * @return void
+	 */
+	public static function setValidator(Validator $validator) {
+		static::$validator = $validator;
+	}
+
+
+	/**
+	 * Runs all the specified validations and returns true if no errors were added otherwise false.
+	 *
+	 * @return bool
+	 */
+	final public function isValid() {
+		return count($this->getErrors()) == 0;
+	}
+
+
+	/**
+	 * Returns the Violation object that holds all information about attribute error messages.
+	 *
+	 * @return Symfony\Component\Validator\ConstraintViolationList
+	 */
+	final public function getErrors() {
+		return self::getValidator()->validate($this);
+	}
+
+
+	/**
+	 * Performs validation. Returns true on success, throws an exception on error.
+	 *
+	 * @prePersist
+	 * @preUpdate
+	 *
+	 * @return Symfony\Component\Validator\ConstraintViolationList
+	 * @throws bool|ValidationException
+	 */
+	public function validate() {
+		$errors = $this->getErrors();
+		if (count($errors) > 0) {
+			foreach ($errors as $violation) {
+				/* @var $violation ConstraintViolation */
+				$root = $violation->getRoot();
+				$class = is_object($root) ? get_class($root) : $root;
+				$msg = "{$class}.{$violation->getPropertyPath()}: {$violation->getMessage()}";
+				throw new ValidationException($msg);
+			}
+		}
+		return TRUE;
 	}
 
 
