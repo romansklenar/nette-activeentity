@@ -19,7 +19,14 @@
 
 namespace DoctrineExtensions\ActiveEntity;
 
-use ArrayAccess, Nette\Environment, Nette\Object, Doctrine, Doctrine\Common\Collections\Collection, MemberAccessException; // use with Nette 1.0 for PHP 5.3
+use ArrayAccess,
+	MemberAccessException,
+	InvalidStateException,
+	Nette,
+	Nette\Object,
+	Doctrine,
+	Doctrine\ORM\EntityManager,
+	Doctrine\Common\Collections\Collection;
 
 
 /**
@@ -133,6 +140,11 @@ abstract class ActiveEntity extends Object implements ArrayAccess
 	}
 
 
+
+	/********************* static shortcuts *********************/
+
+
+
 	/**
 	 * Gets entity manager.
 	 *
@@ -157,13 +169,39 @@ abstract class ActiveEntity extends Object implements ArrayAccess
 
 
 	/**
-	 * Returns the metadata for a class.
+	 * Gets the metadata for a class.
 	 *
 	 * @return Doctrine\ORM\Mapping\ClassMetadata
 	 */
 	protected static function getClassMetadata() {
 		return self::getEntityManager()->getClassMetadata(get_called_class());
 	}
+
+
+	/**
+	 * Magic call allows to invoke repository methods like:
+	 * $user = User::find($id);
+	 * $users = User::findBy(array("name" => "beberlei"));
+	 * $beberlei = User::findOneBy(array("name" => "beberlei"));
+	 *
+	 * @param mixed $method
+	 * @param mixed $arguments
+	 * @return mixed
+	 */
+	public static function __callStatic($method, $arguments) {
+		try {
+			$cb = callback(self::getRepository(), $method);
+			return $cb->invokeArgs($arguments);
+
+		} catch (InvalidStateException $e) {
+			return parent::__callStatic($method, $arguments);
+		}
+	}
+
+
+
+	/********************* conversion *********************/
+
 
 
 	/**
@@ -233,27 +271,6 @@ abstract class ActiveEntity extends Object implements ArrayAccess
 	}
 
 
-	/**
-	 * Magic call allows to invoke repository methods like:
-	 * $user = User::find($id);
-	 * $users = User::findBy(array("name" => "beberlei"));
-	 * $beberlei = User::findOneBy(array("name" => "beberlei"));
-	 *
-	 * @param mixed $method
-	 * @param mixed $arguments
-	 * @return mixed
-	 */
-	public static function __callStatic($method, $arguments) {
-		try {
-			$cb = callback(self::getRepository(), $method);
-			return $cb->invokeArgs($arguments);
-
-		} catch (InvalidStateException $e) {
-			return parent::__callStatic($method, $arguments);
-		}
-	}
-
-
 
 	/********************* magic getters & setters *********************/
 
@@ -262,7 +279,7 @@ abstract class ActiveEntity extends Object implements ArrayAccess
 	/**
 	 * Returns property value. Do not call directly.
 	 * Tries to use dynamic getter for protected properties (reflection fields) if getter is not defined.
-	 * 
+	 *
 	 * @param  string  property name
 	 * @return mixed   property value
 	 * @throws MemberAccessException if the property is not defined.
@@ -271,7 +288,7 @@ abstract class ActiveEntity extends Object implements ArrayAccess
 		try {
 			$value = parent::__get($name);
 			return $value;
-		
+
 		} catch (MemberAccessException $e) {
 			if ($this->hasProtectedReflectionField($name)) { // intentionally not used __isset
 				$value = $this->$name;
@@ -312,7 +329,7 @@ abstract class ActiveEntity extends Object implements ArrayAccess
 	/**
 	 * Is property defined?
 	 * Tries to use dynamic getter for protected properties (reflection fields).
-	 * 
+	 *
 	 * @param  string  property name
 	 * @return bool
 	 */
