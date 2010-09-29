@@ -59,7 +59,7 @@ use ArrayAccess,
 abstract class ActiveEntity extends Object implements ArrayAccess
 {
 	/** @var Doctrine\ORM\EntityManager */
-	private static $entityManager;
+	protected static $em;
 
 
 	/**
@@ -151,10 +151,21 @@ abstract class ActiveEntity extends Object implements ArrayAccess
 	 * @return Doctrine\ORM\EntityManager
 	 */
 	protected static function getEntityManager() {
-		if (self::$entityManager === NULL) {
-			self::$entityManager = Environment::getEntityManager();
+		if (static::$em == NULL) {
+			throw new InvalidStateException("Entity Manager is not set.");
 		}
-		return self::$entityManager;
+		return static::$em;
+	}
+
+
+	/**
+	 * Sets entity manager.
+	 *
+	 * @param Doctrine\ORM\EntityManager $em
+	 * @return void
+	 */
+	public static function setEntityManager(EntityManager $em) {
+		static::$em = $em;
 	}
 
 
