@@ -24,14 +24,10 @@ use ArrayAccess,
 	InvalidStateException,
 	RuntimeException,
 	Nette,
-	Nette\Object,
+	Symfony,
 	Doctrine,
 	Doctrine\ORM\EntityManager,
-	Doctrine\Common\Collections\Collection,
-	Symfony,
-	Symfony\Component\Validator\ConstraintViolation,
-	Symfony\Component\Validator\ConstraintViolationList,
-	Symfony\Component\Validator\Validator;
+	Doctrine\Common\Collections\Collection;
 
 
 /**
@@ -61,7 +57,7 @@ use ArrayAccess,
  * @MappedSuperclass
  * @HasLifecycleCallbacks
  */
-abstract class ActiveEntity extends Object implements ArrayAccess
+abstract class ActiveEntity extends Nette\Object implements ArrayAccess
 {
 	/** @var Doctrine\ORM\EntityManager */
 	protected static $em;
@@ -141,7 +137,7 @@ abstract class ActiveEntity extends Object implements ArrayAccess
 	 * @param Symfony\Component\Validator\Validator $validator
 	 * @return void
 	 */
-	public static function setValidator(Validator $validator) {
+	public static function setValidator(Symfony\Component\Validator\Validator $validator) {
 		static::$validator = $validator;
 	}
 
@@ -179,7 +175,7 @@ abstract class ActiveEntity extends Object implements ArrayAccess
 		$errors = $this->getErrors();
 		if (count($errors) > 0) {
 			foreach ($errors as $violation) {
-				/* @var $violation ConstraintViolation */
+				/* @var $violation Symfony\Component\Validator\ConstraintViolation */
 				$root = $violation->getRoot();
 				$class = is_object($root) ? get_class($root) : $root;
 				$msg = "{$class}.{$violation->getPropertyPath()}: {$violation->getMessage()}";
