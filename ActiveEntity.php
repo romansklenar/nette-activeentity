@@ -22,6 +22,7 @@ namespace DoctrineExtensions\ActiveEntity;
 use ArrayAccess,
 	MemberAccessException,
 	InvalidStateException,
+	RuntimeException,
 	Nette,
 	Nette\Object,
 	Doctrine,
@@ -128,7 +129,7 @@ abstract class ActiveEntity extends Object implements ArrayAccess
 	 */
 	protected static function getValidator() {
 		if (static::$validator == NULL) {
-			throw new InvalidStateException("Validator is not set.");
+			throw new RuntimeException("Validator is not set.");
 		}
 		return static::$validator;
 	}
@@ -229,7 +230,7 @@ abstract class ActiveEntity extends Object implements ArrayAccess
 	 */
 	protected static function getEntityManager() {
 		if (static::$em == NULL) {
-			throw new InvalidStateException("Entity Manager is not set.");
+			throw new RuntimeException("Entity Manager is not set.");
 		}
 		return static::$em;
 	}
@@ -281,7 +282,7 @@ abstract class ActiveEntity extends Object implements ArrayAccess
 			$cb = callback(self::getRepository(), $method);
 			return $cb->invokeArgs($arguments);
 
-		} catch (InvalidStateException $e) {
+		} catch (InvalidStateException $e) { // todo: BadMethodCallException ?
 			return parent::__callStatic($method, $arguments);
 		}
 	}
