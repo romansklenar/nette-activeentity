@@ -94,12 +94,9 @@ abstract class ActiveEntity extends Object implements ArrayAccess
 
 	/**
 	 * Entity becomes managed and persisted by EntityManager.
-	 *
-	 * @return DoctrineExtensions\ActiveEntity\ActiveEntity
 	 */
 	public function save() {
 		self::getEntityManager()->persist($this);
-		return $this;
 	}
 
 
